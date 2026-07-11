@@ -59,7 +59,7 @@ sandforge --help
 
 ```bash
 sandforge init                       # bring up the control plane (forge + Postgres + warm runner)
-# → prints: forge http://127.0.0.1:3000   login sandforge / sandforge-dev   token …
+# → prints: forge http://127.0.0.1:3000   login sandforge / <random-per-instance>   token …
 
 sandforge import https://github.com/you/yourrepo.git   # seed a working repo from your upstream
 sandforge status                     # one-screen health + active work/* branches
@@ -69,7 +69,9 @@ sandforge status                     # one-screen health + active work/* branche
 also *warms* the runner so your **first** CI push is already fast.
 
 The forge is at a **stable** `http://127.0.0.1:3000` across restarts (no `/etc/hosts`, no sudo).
-Login: `sandforge` / `sandforge-dev`. An API token is written to `~/.sandforge/<project>/credentials` (mode `0600`).
+Login: `sandforge` / a **random password generated at first `init`** (printed once, and kept in
+`~/.sandforge/<project>/credentials`, mode `0600`, along with the API token). Override it with
+`admin.password` in `sandforge.yaml` or `SANDFORGE_ADMIN_PASSWORD` if you need a fixed value.
 
 ---
 

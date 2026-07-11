@@ -202,6 +202,11 @@ func (a *App) Init() error {
 	}
 	a.Log.Event("health", "forge healthy", map[string]any{"url": a.Cfg.CloneURL()})
 
+	a.Log.Step("init: resolving admin credentials")
+	if err := a.resolveAdminPassword(); err != nil {
+		return err
+	}
+
 	a.Log.Step("init: seeding admin user (idempotent)")
 	if err := a.ensureAdmin(env); err != nil {
 		return err
@@ -210,6 +215,13 @@ func (a *App) Init() error {
 	a.Log.Step("init: ensuring API token")
 	if err := a.ensureToken(env); err != nil {
 		return err
+	}
+
+	// Cosmetic, so best-effort: give the sandforge admin the robot avatar. A failure is logged
+	// (never silent) but must not block the bootstrap.
+	a.Log.Step("init: setting the sandforge robot avatar")
+	if err := a.Client.SetUserAvatar(); err != nil {
+		a.Log.Event("avatar", "skipped", map[string]any{"reason": err.Error()})
 	}
 
 	a.Log.Step("init: registering act_runner (chicken-and-egg sequenced)")
@@ -317,15 +329,53 @@ func ciContextHash(ctxDir string) string {
 	return hex.EncodeToString(h.Sum(nil))[:16]
 }
 
+// resolveAdminPassword fills Cfg.Admin.Password when nothing explicit was configured (yaml/env):
+// reuse the password already persisted for this instance, else generate a fresh random one. The
+// old behavior — every instance sharing the hardcoded "sandforge-dev" — is gone: the forge listens
+// on loopback only, but a well-known credential is still a well-known credential.
+func (a *App) resolveAdminPassword() error {
+	if a.Cfg.Admin.Password != "" {
+		return nil // explicit sandforge.yaml / SANDFORGE_ADMIN_PASSWORD wins
+	}
+	// Reuse the instance's persisted password — EXCEPT the retired hardcoded default, which is a
+	// publicly known credential: instances still carrying it get rotated to a random one (the
+	// change-password in ensureAdmin + the credentials re-save make the rotation complete).
+	const retiredDefault = "sandforge-dev"
+	if a.Creds != nil && a.Creds.Password != "" && a.Creds.Password != retiredDefault {
+		a.Cfg.Admin.Password = a.Creds.Password // existing instance: keep its password
+		return nil
+	}
+	pw, err := config.GeneratePassword(20)
+	if err != nil {
+		return err
+	}
+	a.Cfg.Admin.Password = pw
+	reason := "no password configured and none persisted; random-per-instance replaces the shared default"
+	if a.Creds != nil && a.Creds.Password == retiredDefault {
+		reason = "instance still used the retired well-known default; rotated to a random password"
+	}
+	a.Log.Decision("D-ADMIN-PW", "Generated a random admin password for this instance", reason, "docs/design.md#12")
+	return nil
+}
+
 func (a *App) ensureAdmin(env []string) error {
 	out, err := compose.ExecUserFiles(env, a.cpFiles(), "forgejo", "git",
 		"forgejo", "admin", "user", "create",
 		"--admin", "--username", a.Cfg.Admin.User, "--password", a.Cfg.Admin.Password,
 		"--email", a.Cfg.Admin.Email, "--must-change-password=false")
-	if err != nil && !strings.Contains(out, "already exists") && !strings.Contains(out, "user already exists") {
-		// "already exists" is success for idempotency
+	if err != nil {
 		if !strings.Contains(strings.ToLower(out), "already") {
 			return fmt.Errorf("admin create: %w\n%s", err, out)
+		}
+		// "already exists" is success for idempotency — but the existing user's password may not be
+		// the one we resolved (e.g. the credentials file was deleted, or an old instance still has
+		// the retired hardcoded default). Set it authoritatively so the login we print always works.
+		out, err = compose.ExecUserFiles(env, a.cpFiles(), "forgejo", "git",
+			"forgejo", "admin", "user", "change-password",
+			"--username", a.Cfg.Admin.User, "--password", a.Cfg.Admin.Password,
+			"--must-change-password=false")
+		if err != nil {
+			return fmt.Errorf("admin change-password (align existing user with resolved password): %w\n%s", err, out)
 		}
 	}
 	return nil
@@ -336,6 +386,14 @@ func (a *App) ensureToken(env []string) error {
 		a.Client = forge.NewClient(a.Creds.URL, a.Creds.Token)
 		// verify still valid
 		if a.Client.GetRepoOK() {
+			// keep the persisted password in step with the resolved one (ensureAdmin made the
+			// resolved value authoritative in the forge; the file must say the same thing).
+			if a.Creds.Password != a.Cfg.Admin.Password {
+				a.Creds.Password = a.Cfg.Admin.Password
+				if err := forge.SaveCredentials(a.Cfg.StateDir, a.Creds); err != nil {
+					return err
+				}
+			}
 			return nil
 		}
 	}

@@ -4,6 +4,7 @@
 package config
 
 import (
+	"crypto/rand"
 	"fmt"
 	"os"
 	"os/exec"
@@ -105,7 +106,9 @@ func Defaults() *Config {
 		RunnerMode: "auto",
 	}
 	c.Admin.User = "sandforge"
-	c.Admin.Password = "sandforge-dev"
+	// Password intentionally empty: init generates a random one per instance (or reuses the one
+	// already persisted in ~/.sandforge/<project>/credentials). A yaml/env value still overrides.
+	c.Admin.Password = ""
 	c.Admin.Email = "admin@sandforge.local"
 	c.Admin.Org = "sandforge"
 	c.Images.Forgejo = "codeberg.org/forgejo/forgejo:11"
@@ -151,6 +154,9 @@ func Load(repoRoot string) (*Config, error) {
 	if v := os.Getenv("SANDFORGE_RUNNER_MODE"); v != "" {
 		c.RunnerMode = v
 	}
+	if v := os.Getenv("SANDFORGE_ADMIN_PASSWORD"); v != "" {
+		c.Admin.Password = v
+	}
 	if v := os.Getenv("SANDFORGE_FORGE_INTERNAL_URL"); v != "" {
 		c.ForgeInternalURL = v
 	}
@@ -192,6 +198,22 @@ func detectDockerSocket() string {
 func fileExists(p string) bool {
 	_, err := os.Stat(p)
 	return err == nil
+}
+
+// GeneratePassword returns a crypto/rand password of n characters over an unambiguous base62-ish
+// alphabet (no 0/O/l/1/I). Used at init when no admin password is configured, so every instance
+// gets its own secret instead of a shared hardcoded default. Fails loud on entropy errors — never
+// a guessed/constant fallback (resilience rule).
+func GeneratePassword(n int) (string, error) {
+	const alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate admin password: %w", err)
+	}
+	for i := range b {
+		b[i] = alphabet[int(b[i])%len(alphabet)]
+	}
+	return string(b), nil
 }
 
 // effectiveDockerHost returns the Docker endpoint the user's own `docker` CLI resolves to: the

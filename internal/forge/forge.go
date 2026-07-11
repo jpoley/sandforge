@@ -4,6 +4,8 @@ package forge
 
 import (
 	"bytes"
+	_ "embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +15,12 @@ import (
 	"strings"
 	"time"
 )
+
+// avatarPNG is the sandforge robot (the daax.dev mascot) shown as the admin user's avatar so
+// bot-authored PRs/comments are visually distinct in the forge UI.
+//
+//go:embed avatar.png
+var avatarPNG []byte
 
 // Client talks to a Forgejo instance over its REST API using an access token.
 type Client struct {
@@ -414,6 +422,23 @@ func (c *Client) GetPull(owner, repo string, index int) (*PullRef, error) {
 		return nil, fmt.Errorf("get pull %s/%s#%d: decode response: %w", owner, repo, index, err)
 	}
 	return &pr, nil
+}
+
+// SetUserAvatar uploads the embedded robot avatar for the authenticated user (the sandforge
+// admin). Idempotent — Forgejo replaces any existing avatar.
+func (c *Client) SetUserAvatar() error {
+	resp, err := c.do("POST", "/api/v1/user/avatar", map[string]string{
+		"image": base64.StdEncoding.EncodeToString(avatarPNG),
+	})
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 204 && resp.StatusCode != 200 {
+		b, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("set user avatar: %d %s", resp.StatusCode, string(b))
+	}
+	return nil
 }
 
 // Credentials persisted at ~/.sandforge/<project>/credentials (0600).

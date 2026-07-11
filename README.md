@@ -26,14 +26,25 @@ contributors. Reference docs sit between: [goal](docs/goal.md) (the contract),
 ## A · Use Sandforge (one self-contained binary — no repo needed)
 
 ```bash
+# No Go toolchain needed — the installer tries a pre-built release, then local Go,
+# then builds inside a golang Docker container (Docker is required by sandforge anyway):
+curl -fsSL https://raw.githubusercontent.com/jpoley/sandforge/main/scripts/install.sh | bash
+
+# …or, with Go 1.25.4+ installed:
 go install github.com/jpoley/sandforge/cmd/sandforge@latest
-# or grab a pre-built binary from https://github.com/jpoley/sandforge/releases/latest
+
 sandforge e2e                                # stand it up + run the WHOLE closed loop, validating every AC
 ```
 
-`go install` requires Go 1.25.4+ (see `go.mod`). No tagged releases are required for `@latest` to
-work — it resolves to the newest commit on `main` — but pre-built binaries (linux/darwin,
-amd64/arm64) are only published for tagged versions on the [Releases page](https://github.com/jpoley/sandforge/releases).
+Pre-built binaries (linux/darwin, amd64/arm64) are published for tagged versions on the
+[Releases page](https://github.com/jpoley/sandforge/releases); `go install @latest` resolves to
+the newest commit on `main`.
+
+**Using Claude Code?** The installer also drops a **`/sandforge-setup` skill** into
+`~/.claude/skills` — ask Claude to "set up sandforge" and it will preflight your machine (Docker
+running? port free?), install the binary, bring the forge up in the background, and wire `@claude`
+PR reviews to the Claude Code CLI **on your subscription** (no API key). The skill source lives at
+[`.claude/skills/sandforge-setup/SKILL.md`](.claude/skills/sandforge-setup/SKILL.md).
 
 All deploy assets are embedded; the binary materializes them at runtime, so **end users never clone
 this repo**. The [User Guide](docs/userguide.md) walks through install → wiring any repo → connecting
