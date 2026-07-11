@@ -1,0 +1,19 @@
+# Sandforge build + runtime artifacts
+/bin/
+assets/.deploy.tar.gz.*.tmp
+deploy/control-plane/runner/
+deploy/control-plane/.env
+
+# Tasks app build artifacts
+deploy/tasks-app/frontend/node_modules/
+deploy/tasks-app/frontend/dist/
+deploy/tasks-app/e2e/node_modules/
+deploy/tasks-app/e2e/test-results/
+deploy/tasks-app/e2e/playwright-report/
+
+# Local scratch
+*.log
+
+# Runtime decision/event logs — generated, and may embed local tokens in clone URLs.
+# Never commit them (a Forgejo token in a clone URL was caught in review).
+.logs/

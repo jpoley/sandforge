@@ -1,0 +1,18 @@
+# Sandforge runner-mode overlay: TCP (design §5.1 — still NOT Docker-in-Docker).
+# Appended by the CLI to control-plane.compose.yml when the effective Docker endpoint is a TCP
+# daemon (remote host, docker context, or a locally-exposed tcp:// where the unix socket can't be
+# mounted). The runner DIALS that daemon — the same one `docker compose` uses — so nothing is
+# mounted and there is no gid/group_add. Job containers still attach to sandforge-net on that daemon
+# and resolve `forgejo`, exactly as in socket mode.
+#
+# SANDFORGE_DOCKER_HOST is the endpoint the CLI resolved, with a loopback host already rewritten to
+# host.docker.internal. extra_hosts maps that name to the host gateway so a developer-machine TCP
+# daemon is reachable from inside the runner container on Linux (Docker Desktop provides it natively).
+name: ${SANDFORGE_PROJECT:-sandforge}
+
+services:
+  act_runner:
+    environment:
+      DOCKER_HOST: ${SANDFORGE_DOCKER_HOST:?run via the sandforge CLI, which resolves the tcp DOCKER_HOST}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

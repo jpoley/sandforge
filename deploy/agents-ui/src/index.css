@@ -1,0 +1,96 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Sandforge agents theme. Color triplets mirror the deep-blue corporate palette of the
+   reference design (light + dark), kept as live HSL vars so utilities resolve to hsl(var(--token)). */
+:root {
+  --background: 204 33% 99%;
+  --foreground: 201 80% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 201 80% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 201 80% 11%;
+  --primary: 214 60% 38%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 204 30% 93%;
+  --secondary-foreground: 201 70% 16%;
+  --muted: 204 28% 95%;
+  --muted-foreground: 204 18% 35%;
+  --accent: 195 75% 90%;
+  --accent-foreground: 201 85% 18%;
+  --destructive: 0 72% 42%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 60% 34%;
+  --warning: 38 92% 42%;
+  --border: 204 22% 87%;
+  --input: 204 22% 85%;
+  --ring: 214 60% 38%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 203 55% 7%;
+  --foreground: 204 30% 95%;
+  --card: 203 45% 10%;
+  --card-foreground: 204 30% 95%;
+  --popover: 203 50% 9%;
+  --popover-foreground: 204 30% 95%;
+  --primary: 198 85% 58%;
+  --primary-foreground: 203 80% 8%;
+  --secondary: 203 33% 17%;
+  --secondary-foreground: 204 30% 93%;
+  --muted: 203 30% 15%;
+  --muted-foreground: 204 22% 68%;
+  --accent: 203 45% 20%;
+  --accent-foreground: 198 85% 78%;
+  --destructive: 0 62% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 142 55% 50%;
+  --warning: 38 90% 58%;
+  --border: 203 28% 19%;
+  --input: 203 28% 21%;
+  --ring: 198 85% 58%;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --font-mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    margin: 0;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Montserrat", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "base_url": "http://127.0.0.1:3998",
+  "forge_url": "http://127.0.0.1:3000",
+  "token": "d70eb124e9df6ab51946ae562d4c5b7230b0ba5a",
+  "owner": "sandforge",
+  "repo": "hello-e2e",
+  "pr": 2,
+  "pr_head_ref": "e2e/handoff-20260701134811",
+  "agent": "fixbot"
+}

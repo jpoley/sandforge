@@ -1,0 +1,7 @@
+# build artifacts
+backend/tasksapp
+frontend/dist
+**/node_modules
+**/test-results
+**/playwright-report
+*.log

@@ -1,0 +1,57 @@
+# Deploy-target stack for the Tasks reference app: db + backend + lb (Caddy).
+# Brought up on demand at `graduate`, exercised by e2e, then torn down.
+name: ${TASKS_PROJECT:-sandforge-tasks}
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tasks
+      POSTGRES_PASSWORD: tasks
+      POSTGRES_DB: tasks
+    volumes:
+      # Named volume so data persists across `restart`/recreate (SC-5).
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tasks -d tasks"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 5s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://tasks:tasks@db:5432/tasks?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # Self-healthcheck via the binary (alpine image, no curl needed).
+      test: ["CMD", "/usr/local/bin/tasksapp", "-healthcheck"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 3s
+
+  lb:
+    build:
+      # Root context so the builder stage can see both frontend/ and lb/.
+      context: .
+      dockerfile: lb/Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${TASKS_LB_PORT:-8088}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 3s
+
+volumes:
+  db-data:

@@ -1,0 +1,18 @@
+# Sandforge runner-mode overlay: SOCKET (design §5.1).
+# Appended by the CLI to control-plane.compose.yml when the effective Docker endpoint is a local
+# unix socket (standard Docker, Docker Desktop, rootless, Colima). The runner bind-mounts that
+# socket and is granted the socket's group so it can talk to the daemon — no Docker-in-Docker.
+#
+# SANDFORGE_DOCKER_GID is REQUIRED (no silent default): the CLI probes the real in-container socket
+# gid and injects it. A missing value fails loud here instead of guessing and crash-looping the
+# runner on 'permission denied' (premortem C3). Set it yourself only if running compose directly.
+name: ${SANDFORGE_PROJECT:-sandforge}
+
+services:
+  act_runner:
+    group_add:
+      - "${SANDFORGE_DOCKER_GID:?run via the sandforge CLI, which detects the docker-socket gid; or set SANDFORGE_DOCKER_GID}"
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+    volumes:
+      - ${SANDFORGE_DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock

@@ -1,0 +1,107 @@
+# Sandforge control-plane stack (design.md §2, §9, §13).
+# Long-lived/warm: reverse-proxy (LB) · Forgejo · Postgres · act_runner.
+# Pinned versions (design §13). LB binds a fixed 127.0.0.1:3000 (design §9).
+# Values are templated by the CLI via ${SANDFORGE_*} env (sensible defaults inline).
+
+name: ${SANDFORGE_PROJECT:-sandforge}
+
+networks:
+  sandforge-net:
+    name: ${SANDFORGE_NETWORK:-sandforge-net}
+
+volumes:
+  forgejo-data:
+    name: ${SANDFORGE_PROJECT:-sandforge}-forgejo-data
+  postgres-data:
+    name: ${SANDFORGE_PROJECT:-sandforge}-postgres-data
+
+services:
+  postgres:
+    image: ${SANDFORGE_POSTGRES_IMAGE:-postgres:16-alpine}
+    restart: unless-stopped
+    networks: [sandforge-net]
+    environment:
+      POSTGRES_USER: forgejo
+      POSTGRES_PASSWORD: forgejo
+      POSTGRES_DB: forgejo
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forgejo -d forgejo"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  forgejo:
+    image: ${SANDFORGE_FORGEJO_IMAGE:-codeberg.org/forgejo/forgejo:11}
+    restart: unless-stopped
+    networks: [sandforge-net]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      USER_UID: "1000"
+      USER_GID: "1000"
+      FORGEJO__database__DB_TYPE: postgres
+      FORGEJO__database__HOST: postgres:5432
+      FORGEJO__database__NAME: forgejo
+      FORGEJO__database__USER: forgejo
+      FORGEJO__database__PASSWD: forgejo
+      FORGEJO__server__DOMAIN: 127.0.0.1
+      FORGEJO__server__HTTP_PORT: "3000"
+      FORGEJO__server__ROOT_URL: http://127.0.0.1:${SANDFORGE_HTTP_PORT:-3000}/
+      FORGEJO__server__OFFLINE_MODE: "true"
+      FORGEJO__security__INSTALL_LOCK: "true"
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__actions__ENABLED: "true"
+      FORGEJO__webhook__ALLOWED_HOST_LIST: "*"
+      FORGEJO__log__LEVEL: warn
+      FORGEJO__cron_2e_update_checker__ENABLED: "false"
+    volumes:
+      - forgejo-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  lb:
+    image: ${SANDFORGE_LB_IMAGE:-caddy:2-alpine}
+    restart: unless-stopped
+    networks: [sandforge-net]
+    depends_on:
+      forgejo:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${SANDFORGE_HTTP_PORT:-3000}:3000"
+    command: >
+      caddy reverse-proxy --from :3000 --to forgejo:3000
+    # v1 default path is HTTP on loopback (design §9); SSH is an optional later add.
+
+  act_runner:
+    image: code.forgejo.org/forgejo/runner:${SANDFORGE_RUNNER_VERSION:-11.0.0}
+    restart: unless-stopped
+    networks: [sandforge-net]
+    depends_on:
+      forgejo:
+        condition: service_healthy
+    # The runner reaches Docker via whichever daemon the user's own `docker` CLI uses — the SAME
+    # daemon `docker compose` targets, so builds reuse the host cache and there is NO Docker-in-Docker
+    # (design §5.1). HOW it connects is a runner-mode OVERLAY the sandforge CLI selects and appends:
+    #   control-plane.socket.compose.yml — bind-mount the host unix socket (+ detected gid)
+    #   control-plane.tcp.compose.yml    — dial a TCP DOCKER_HOST (no mount, no gid; remote/rootless)
+    # This base is mode-agnostic and is not meant to be brought up on its own — always run via the CLI.
+    environment:
+      DOCKER_HOST: ${SANDFORGE_DOCKER_HOST:-unix:///var/run/docker.sock}
+      DOCKER_API_VERSION: "${SANDFORGE_DOCKER_API:-1.44}"
+    volumes:
+      - ${SANDFORGE_RUNNER_DIR:-./runner}:/data
+    # The runner is registered + started by the CLI's bootstrap (design §14): it writes
+    # /data/.runner + /data/config.yml then runs `act_runner daemon`. entrypoint overridden:
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        cd /data
+        while [ ! -f /data/.runner ]; do echo "waiting for registration..."; sleep 1; done
+        exec forgejo-runner daemon --config /data/config.yml

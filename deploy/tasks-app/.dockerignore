@@ -1,0 +1,7 @@
+# Root context is used by the lb build (frontend + lb/Caddyfile).
+**/node_modules
+frontend/dist
+backend/vendor
+e2e
+**/.git
+**/*.log

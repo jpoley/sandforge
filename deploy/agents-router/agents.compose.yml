@@ -1,0 +1,36 @@
+# Opt-in containerized agents router. It joins the EXISTING control-plane network (external) so it
+# reaches Forgejo as `forgejo:3000` and Forgejo reaches it as `agents:3999` — fully container-to-
+# container, no host.docker.internal. Started by `sandforge agents up`, torn down by `agents down`.
+#
+# Persistence: the host instance state dir is mounted so config.json + events.jsonl + credentials
+# are the SAME files the host CLI uses (so `agents list` on the host and the container agree).
+
+name: ${SANDFORGE_PROJECT:-sandforge}-agents
+
+networks:
+  sandforge-net:
+    name: ${SANDFORGE_NETWORK:-sandforge-net}
+    external: true
+
+services:
+  agents:
+    build:
+      context: ../..
+      dockerfile: deploy/agents-router/Dockerfile
+    image: sandforge/agents:latest
+    restart: unless-stopped
+    networks: [sandforge-net]
+    ports:
+      # UI exposed on loopback only (it runs host commands inside the container; never expose to LAN).
+      - "127.0.0.1:${SANDFORGE_AGENTS_PORT:-3999}:3999"
+    environment:
+      SANDFORGE_PROJECT: ${SANDFORGE_PROJECT:-sandforge}
+      # In-network forge address (the container can't reach the host's 127.0.0.1:3000).
+      SANDFORGE_FORGE_INTERNAL_URL: http://forgejo:3000
+      # Webhook target host Forgejo posts to = this service's network name.
+      SANDFORGE_AGENTS_HOST: agents
+      SANDFORGE_AGENTS_REPO: ${SANDFORGE_AGENTS_REPO:-}
+    volumes:
+      # Same state the host CLI reads/writes (credentials + agents/config.json + events.jsonl).
+      - ${SANDFORGE_STATE_DIR:?set by the sandforge CLI}:/root/.sandforge/${SANDFORGE_PROJECT:-sandforge}
+    command: ["agents", "serve", "--port", "3999"]

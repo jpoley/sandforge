@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="300" viewBox="0 0 960 300"
+     font-family="'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="7.5" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L8,3.5 L0,7 Z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect width="960" height="300" fill="#ffffff"/>
+
+  <text x="40" y="48" font-size="22" font-weight="600" fill="#0f172a">Branch model — linear, three tiers</text>
+
+  <!-- work -->
+  <rect x="40"  y="96" width="250" height="104" rx="16" fill="#eff5ff" stroke="#2563eb" stroke-width="2"/>
+  <text x="165" y="138" font-size="21" font-weight="600" fill="#1e3a8a" text-anchor="middle">work/&lt;agent&gt;/&lt;slug&gt;</text>
+  <text x="165" y="168" font-size="15" fill="#475569" text-anchor="middle">agent playground</text>
+  <text x="165" y="188" font-size="15" fill="#475569" text-anchor="middle">no protection</text>
+
+  <!-- staging -->
+  <rect x="380" y="96" width="200" height="104" rx="16" fill="#fff8eb" stroke="#d97706" stroke-width="2"/>
+  <text x="480" y="138" font-size="21" font-weight="600" fill="#92400e" text-anchor="middle">staging</text>
+  <text x="480" y="168" font-size="15" fill="#475569" text-anchor="middle">semi-protected</text>
+  <text x="480" y="188" font-size="15" fill="#475569" text-anchor="middle">full e2e fires</text>
+
+  <!-- main -->
+  <rect x="670" y="96" width="200" height="104" rx="16" fill="#edfaf1" stroke="#15803d" stroke-width="2"/>
+  <text x="770" y="138" font-size="21" font-weight="600" fill="#14532d" text-anchor="middle">main</text>
+  <text x="770" y="168" font-size="15" fill="#475569" text-anchor="middle">clean, protected</text>
+  <text x="770" y="188" font-size="15" fill="#475569" text-anchor="middle">upstream target</text>
+
+  <!-- arrows -->
+  <line x1="292" y1="148" x2="372" y2="148" stroke="#64748b" stroke-width="2.5" marker-end="url(#arr)"/>
+  <line x1="582" y1="148" x2="662" y2="148" stroke="#64748b" stroke-width="2.5" marker-end="url(#arr)"/>
+
+  <!-- gate captions -->
+  <text x="332" y="92" font-size="13" font-weight="600" fill="#334155" text-anchor="middle">gate</text>
+  <text x="332" y="232" font-size="13.5" fill="#475569" text-anchor="middle">build + unit</text>
+  <text x="332" y="250" font-size="13.5" fill="#475569" text-anchor="middle">green</text>
+
+  <text x="622" y="92" font-size="13" font-weight="600" fill="#334155" text-anchor="middle">gate</text>
+  <text x="622" y="232" font-size="13.5" fill="#475569" text-anchor="middle">e2e + PRD</text>
+  <text x="622" y="250" font-size="13.5" fill="#475569" text-anchor="middle">criteria green</text>
+
+  <text x="770" y="232" font-size="13.5" fill="#475569" text-anchor="middle">graduate / upstream</text>
+  <text x="770" y="250" font-size="13.5" fill="#475569" text-anchor="middle">act here</text>
+</svg>

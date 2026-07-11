@@ -1,0 +1,11 @@
+sandforge is meant to be the most inner loop of AI SLDC (completely local) - with github going to usage based pricing and wanting a way to handoff steps (and checks) across more than one ai coding tool (mostly subscription focus) being able to easily iterate back and forth for code / review  with different models / agents - but have them be faster than GitHub - and fully local.  
+
+we will need local CI - to build - and we will need (an option) to do CD - and have full tests in some running envt (to be configured / defined by user) - from another "non main" but semi protected branch.
+
+we'd like to make this into one clean quality PR - with specs, design docs, full e2e tests, and validation of meeting success criteria of the PRD.
+
+it would be nice to have option to be disposable OR persistent - both have very good use cases.    
+
+this has to be a complete one command start up - that can contain well known parts.  (and should be optionally configurable) but MUST NOT be more than a single command to run (we do NOT want users by default to tinker with settings, we expect most users just use it.)
+
+needs to just work, and be easy - and yes handle concurrent agents all using git worktrees / tmux against it.

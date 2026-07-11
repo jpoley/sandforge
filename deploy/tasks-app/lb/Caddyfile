@@ -1,0 +1,24 @@
+{
+	# Disable the admin API; not needed in the deploy-target.
+	admin off
+	auto_https off
+}
+
+:80 {
+	encode gzip
+
+	# API and health are proxied to the Go backend.
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+	handle /healthz {
+		reverse_proxy backend:8080
+	}
+
+	# Everything else is the static SPA. try_files gives SPA fallback.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

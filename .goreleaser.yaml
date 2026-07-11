@@ -1,0 +1,47 @@
+version: 2
+
+project_name: sandforge
+
+# No `before.hooks` here on purpose: assets/deploy.tar.gz is a tracked file (the same one
+# `go install` embeds), and goreleaser requires a clean tree at release time. If deploy/ or
+# docs/prd.md changed, run `mage genAssets` and commit the updated tarball BEFORE tagging.
+
+builds:
+  - id: sandforge
+    main: ./cmd/sandforge
+    binary: sandforge
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+
+archives:
+  - id: sandforge
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE*
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  github:
+    owner: jpoley
+    name: sandforge

@@ -1,0 +1,10 @@
+# Keep the agents-router build context (repo root) small + reproducible. Only the Go module is
+# needed; the heavy deploy-target node_modules / build output and VCS metadata are not.
+.git
+bin
+**/node_modules
+**/dist
+**/test-results
+**/playwright-report
+.logs
+.playwright-mcp

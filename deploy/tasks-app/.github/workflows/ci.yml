@@ -1,0 +1,21 @@
+# Default per-language CI for the Tasks app (design.md §5.1). Runs on every push, including
+# work/* — kept LEAN (backend build+unit, vendored → no network) so the inner-loop round-trip
+# stays under the AC-1 ≤30s contract. Full unit+e2e (frontend, Playwright, persistence) run at
+# `graduate` via the PRD success-criteria validation (SC-*), not on every push.
+name: CI
+on: [push]
+
+jobs:
+  build-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Backend build + unit (vendored, hermetic)
+        # CGO disabled: the backend is pure Go (pgx is cgo-free), so we skip the C toolchain
+        # entirely — faster, fully hermetic, and immune to any host/image gcc-arch mismatch.
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          cd backend
+          go build ./...
+          go test ./...
