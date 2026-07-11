@@ -4,6 +4,10 @@ import (
 	"net"
 	"strings"
 	"testing"
+
+	"github.com/jpoley/sandforge/internal/config"
+	"github.com/jpoley/sandforge/internal/forge"
+	"github.com/jpoley/sandforge/internal/logx"
 )
 
 func TestFreeTCPPort(t *testing.T) {
@@ -109,5 +113,51 @@ func TestSafePrefix(t *testing.T) {
 	}
 	if got := safePrefix("short"); got != "short" {
 		t.Errorf("got %q", got)
+	}
+}
+
+func TestResolveAdminPassword(t *testing.T) {
+	mk := func(explicit string, creds *forge.Credentials) *App {
+		cfg := config.Defaults()
+		cfg.Admin.Password = explicit
+		cfg.StateDir = t.TempDir()
+		return &App{Cfg: cfg, Log: logx.New(cfg.StateDir, true), Creds: creds}
+	}
+
+	// explicit yaml/env value wins over everything, including persisted creds
+	a := mk("explicit-pw", &forge.Credentials{Password: "persisted-pw"})
+	if err := a.resolveAdminPassword(); err != nil || a.Cfg.Admin.Password != "explicit-pw" {
+		t.Errorf("explicit: got (%q, %v), want explicit-pw", a.Cfg.Admin.Password, err)
+	}
+
+	// persisted (non-default) password is reused for an existing instance
+	a = mk("", &forge.Credentials{Password: "persisted-pw"})
+	if err := a.resolveAdminPassword(); err != nil || a.Cfg.Admin.Password != "persisted-pw" {
+		t.Errorf("persisted: got (%q, %v), want persisted-pw", a.Cfg.Admin.Password, err)
+	}
+
+	// nothing configured or persisted -> random password generated
+	a = mk("", nil)
+	if err := a.resolveAdminPassword(); err != nil {
+		t.Fatal(err)
+	}
+	first := a.Cfg.Admin.Password
+	if len(first) != 20 {
+		t.Errorf("generated: len(%q) = %d, want 20", first, len(first))
+	}
+
+	// the retired well-known default is rotated, never reused
+	a = mk("", &forge.Credentials{Password: "sandforge-dev"})
+	if err := a.resolveAdminPassword(); err != nil {
+		t.Fatal(err)
+	}
+	if a.Cfg.Admin.Password == "sandforge-dev" {
+		t.Error("retired default must be rotated to a random password")
+	}
+	if len(a.Cfg.Admin.Password) != 20 {
+		t.Errorf("rotated: len = %d, want 20", len(a.Cfg.Admin.Password))
+	}
+	if a.Cfg.Admin.Password == first {
+		t.Error("two random passwords are identical — generator broken")
 	}
 }

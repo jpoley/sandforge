@@ -59,9 +59,9 @@ type Config struct {
 	// TCP endpoint with a loopback host rewritten to host.docker.internal so it is reachable from
 	// INSIDE the runner container. Empty in socket mode. Persisted so non-init commands reuse it.
 	RunnerDockerHost string `yaml:"-"`
-	RunnerVer    string `yaml:"-"`
-	StateDir     string `yaml:"-"` // ~/.sandforge/<project>
-	RepoRoot     string `yaml:"-"` // sandforge source root (for embedded deploy assets)
+	RunnerVer        string `yaml:"-"`
+	StateDir         string `yaml:"-"` // ~/.sandforge/<project>
+	RepoRoot         string `yaml:"-"` // sandforge source root (for embedded deploy assets)
 	// ForgeInternalURL, when set (SANDFORGE_FORGE_INTERNAL_URL), is the forge base URL as seen from
 	// INSIDE the compose network — e.g. http://forgejo:3000. The containerized agents router uses it
 	// instead of the loopback CloneURL (127.0.0.1:port) for API + clone/push, since the container

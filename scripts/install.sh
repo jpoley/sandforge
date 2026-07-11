@@ -103,7 +103,9 @@ install_from_release || install_with_go || install_with_docker || die \
 # Drops the sandforge-setup skill where Claude Code discovers it, so an AI coding agent can
 # install/diagnose/run sandforge end to end (`/sandforge-setup`). Opt out: SANDFORGE_NO_SKILL=1.
 if [ "${SANDFORGE_NO_SKILL:-0}" != "1" ]; then
-  if [ -d "$HOME/.claude" ]; then
+  # Claude Code is "present" if ~/.claude exists OR the claude CLI is on PATH (fresh installs may
+  # not have created ~/.claude yet — mkdir below handles that).
+  if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
     SKILL_DIR="$HOME/.claude/skills/sandforge-setup"
     mkdir -p "$SKILL_DIR"
     if curl -fsSL "$RAW/.claude/skills/sandforge-setup/SKILL.md" -o "$SKILL_DIR/SKILL.md"; then
@@ -112,7 +114,7 @@ if [ "${SANDFORGE_NO_SKILL:-0}" != "1" ]; then
       warn "could not fetch the Claude skill (offline?) — skipping; re-run later or copy .claude/skills/sandforge-setup from the repo"
     fi
   else
-    say "no ~/.claude found — skipping the Claude Code skill (install Claude Code, then re-run to get /sandforge-setup)"
+    say "Claude Code not detected (no ~/.claude, no claude CLI) — skipping the /sandforge-setup skill; install Claude Code and re-run to get it"
   fi
 fi
 

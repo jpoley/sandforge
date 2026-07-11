@@ -125,3 +125,41 @@ func TestResolveRunnerMode(t *testing.T) {
 		t.Errorf("invalid mode should error")
 	}
 }
+
+func TestGeneratePassword(t *testing.T) {
+	// no ambiguous characters (0/O, 1/l/I are excluded from the alphabet on purpose)
+	const alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	pw, err := GeneratePassword(20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pw) != 20 {
+		t.Errorf("len = %d, want 20", len(pw))
+	}
+	for _, r := range pw {
+		if !contains(alphabet, r) {
+			t.Errorf("password contains %q, not in the unambiguous alphabet", r)
+		}
+	}
+	// two generations must differ (crypto/rand, 57^20 space — a collision means it's broken)
+	pw2, err := GeneratePassword(20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pw == pw2 {
+		t.Errorf("two generated passwords are identical: %q", pw)
+	}
+	// zero length is empty, not an error
+	if pw0, err := GeneratePassword(0); err != nil || pw0 != "" {
+		t.Errorf("GeneratePassword(0) = (%q, %v), want (\"\", nil)", pw0, err)
+	}
+}
+
+func contains(s string, r rune) bool {
+	for _, c := range s {
+		if c == r {
+			return true
+		}
+	}
+	return false
+}

@@ -25,7 +25,7 @@ Run these checks (batch them in one shell call where possible) and show the user
 | Docker daemon **running** | `docker info` | macOS: open Docker Desktop (`open -a Docker`) or `colima start`; Linux: `sudo systemctl start docker` |
 | Compose v2 | `docker compose version` | Install the compose plugin: https://docs.docker.com/compose/install/ |
 | git | `command -v git` | Install git (xcode-select --install / apt install git) |
-| Forge port free | `lsof -nP -iTCP:3000 -sTCP:LISTEN` (empty = free) | Another service owns :3000 — either stop it or use `SANDFORGE_HTTP_PORT=3001 sandforge init` |
+| Forge port free | `lsof -nP -iTCP:3000 -sTCP:LISTEN` (empty = free); if `lsof` is missing (minimal Linux) use `ss -ltn 'sport = :3000'` or `netstat -ltn \| grep :3000` | Another service owns :3000 — either stop it or use `SANDFORGE_HTTP_PORT=3001 sandforge init` |
 | Claude Code CLI | `claude --version` | Only needed for @claude agent wiring (Phase 4) — install Claude Code |
 | node/npm *(optional)* | `command -v node` | Only needed for `sandforge graduate` / `e2e` PRD checks |
 | gh *(optional)* | `command -v gh` | Only needed for the final `sandforge upstream` PR to GitHub |

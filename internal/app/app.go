@@ -364,7 +364,9 @@ func (a *App) ensureAdmin(env []string) error {
 		"--admin", "--username", a.Cfg.Admin.User, "--password", a.Cfg.Admin.Password,
 		"--email", a.Cfg.Admin.Email, "--must-change-password=false")
 	if err != nil {
-		if !strings.Contains(strings.ToLower(out), "already") {
+		// Only the specific "already exists" outcome is success-for-idempotency; any other failure
+		// containing "already" must not be masked by proceeding to change-password.
+		if !strings.Contains(strings.ToLower(out), "already exists") {
 			return fmt.Errorf("admin create: %w\n%s", err, out)
 		}
 		// "already exists" is success for idempotency — but the existing user's password may not be
@@ -381,9 +383,19 @@ func (a *App) ensureAdmin(env []string) error {
 	return nil
 }
 
+// apiBase is the URL the API client dials: in-network forge address when containerized
+// (ForgeInternalURL set — the loopback creds URL is unreachable there), else the creds URL.
+// Same rule New() applies when it first builds the client.
+func (a *App) apiBase(credsURL string) string {
+	if a.Cfg.ForgeInternalURL != "" {
+		return a.Cfg.RepoBase()
+	}
+	return credsURL
+}
+
 func (a *App) ensureToken(env []string) error {
 	if a.Creds != nil && a.Creds.Token != "" {
-		a.Client = forge.NewClient(a.Creds.URL, a.Creds.Token)
+		a.Client = forge.NewClient(a.apiBase(a.Creds.URL), a.Creds.Token)
 		// verify still valid
 		if a.Client.GetRepoOK() {
 			// keep the persisted password in step with the resolved one (ensureAdmin made the
@@ -419,7 +431,7 @@ func (a *App) ensureToken(env []string) error {
 	if err := forge.SaveCredentials(a.Cfg.StateDir, a.Creds); err != nil {
 		return err
 	}
-	a.Client = forge.NewClient(a.Creds.URL, a.Creds.Token)
+	a.Client = forge.NewClient(a.apiBase(a.Creds.URL), a.Creds.Token)
 	return nil
 }
 

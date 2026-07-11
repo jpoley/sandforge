@@ -41,7 +41,8 @@ Pre-built binaries (linux/darwin, amd64/arm64) are published for tagged versions
 the newest commit on `main`.
 
 **Using Claude Code?** The installer also drops a **`/sandforge-setup` skill** into
-`~/.claude/skills` — ask Claude to "set up sandforge" and it will preflight your machine (Docker
+`~/.claude/skills` (when it detects Claude Code — `~/.claude` or the `claude` CLI; skip with
+`SANDFORGE_NO_SKILL=1`) — ask Claude to "set up sandforge" and it will preflight your machine (Docker
 running? port free?), install the binary, bring the forge up in the background, and wire `@claude`
 PR reviews to the Claude Code CLI **on your subscription** (no API key). The skill source lives at
 [`.claude/skills/sandforge-setup/SKILL.md`](.claude/skills/sandforge-setup/SKILL.md).
